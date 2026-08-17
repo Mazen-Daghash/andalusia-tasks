@@ -2,9 +2,11 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Asp.Versioning;
+using ProductsApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
+builder.Services.AddScoped<ITaskService, TaskService>();
 
 // Configure API versioning as requested with default version 1.0
 builder.Services.AddApiVersioning(options =>

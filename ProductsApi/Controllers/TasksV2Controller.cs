@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Asp.Versioning;
+using ProductsApi.Models;
+using ProductsApi.Services;
 
 namespace ProductsApi.Controllers;
 
@@ -8,13 +10,17 @@ namespace ProductsApi.Controllers;
 [Route("api/v2/[controller]")]
 public class TasksV2Controller : ControllerBase
 {
-    [HttpGet]
-    public IActionResult Get()
+    private readonly ITaskService _taskService;
+
+    public TasksV2Controller(ITaskService taskService)
     {
-        var tasks = new[] {
-            new { id = 1, title = "Task One", status = "pending", dueDate = (DateTime?)null, createdAt = DateTime.UtcNow },
-            new { id = 2, title = "Task Two", status = "completed", dueDate = (DateTime?)DateTime.UtcNow.AddDays(1), createdAt = DateTime.UtcNow }
-        };
-        return Ok(tasks);
+        _taskService = taskService;
+    }
+
+    [HttpGet]
+    public IActionResult Get([FromQuery] TaskFilterParams filterParams)
+    {
+        var result = _taskService.GetAll(filterParams);
+        return Ok(result);
     }
 }
