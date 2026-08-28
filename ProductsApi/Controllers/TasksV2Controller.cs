@@ -18,9 +18,52 @@ public class TasksV2Controller : ControllerBase
     }
 
     [HttpGet]
-    public IActionResult Get([FromQuery] TaskFilterParams filterParams)
+    public async Task<IActionResult> Get([FromQuery] TaskFilterParams filterParams)
     {
-        var result = _taskService.GetAll(filterParams);
+        var result = await _taskService.GetAllAsync(filterParams);
         return Ok(result);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var task = await _taskService.GetByIdAsync(id);
+        if (task is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(task);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] TaskItem task)
+    {
+        var created = await _taskService.CreateAsync(task);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] TaskItem task)
+    {
+        var updated = await _taskService.UpdateAsync(id, task);
+        if (updated is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(updated);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var deleted = await _taskService.DeleteAsync(id);
+        if (!deleted)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
     }
 }
