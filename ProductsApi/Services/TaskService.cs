@@ -1,24 +1,28 @@
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
-using ProductsApi.Data;
 using ProductsApi.Models;
+using ProductsApi.Repositories;
 
 namespace ProductsApi.Services;
 
 public class TaskService : ITaskService
 {
-    private readonly AppDbContext _context;
+    private readonly ITaskRepository _repository;
+    private readonly IMapper _mapper;
 
-    public TaskService(AppDbContext context)
+    public TaskService(ITaskRepository repository, IMapper mapper)
     {
-        _context = context;
+        _repository = repository;
+        _mapper = mapper;
     }
 
     // Whitelist of allowed sort fields. Unknown sortBy values fall back to the default.
     private const string DefaultSortField = "createdat";
 
-    public async Task<PagedResult<TaskItem>> GetAllAsync(TaskFilterParams filterParams)
+    public async Task<PagedResult<TaskItemDto>> GetAllAsync(TaskFilterParams filterParams)
     {
-        var query = _context.TaskItems.AsQueryable();
+        var query = _repository.Query();
 
         if (!string.IsNullOrWhiteSpace(filterParams.Search))
         {
@@ -49,11 +53,12 @@ public class TaskService : ITaskService
         var items = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .ProjectTo<TaskItemDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
 
         var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)pageSize);
 
-        return new PagedResult<TaskItem>
+        return new PagedResult<TaskItemDto>
         {
             Items = items,
             Page = page,
@@ -65,45 +70,42 @@ public class TaskService : ITaskService
         };
     }
 
-    public async Task<TaskItem?> GetByIdAsync(int id)
+    public async Task<TaskItemDto?> GetByIdAsync(int id)
     {
-        return await _context.TaskItems.FindAsync(id);
+        var task = await _repository.GetByIdAsync(id);
+        return task is null ? null : _mapper.Map<TaskItemDto>(task);
     }
 
-    public async Task<TaskItem> CreateAsync(TaskItem task)
+    public async Task<TaskItemDto> CreateAsync(CreateTaskRequest request)
     {
-        _context.TaskItems.Add(task);
-        await _context.SaveChangesAsync();
-        return task;
+        var task = _mapper.Map<TaskItem>(request);
+        await _repository.AddAsync(task);
+        return _mapper.Map<TaskItemDto>(task);
     }
 
-    public async Task<TaskItem?> UpdateAsync(int id, TaskItem task)
+    public async Task<TaskItemDto?> UpdateAsync(int id, UpdateTaskRequest request)
     {
-        var existing = await _context.TaskItems.FindAsync(id);
+        var existing = await _repository.GetByIdAsync(id);
         if (existing is null)
         {
             return null;
         }
 
-        existing.Title = task.Title;
-        existing.IsCompleted = task.IsCompleted;
-        existing.DueDate = task.DueDate;
-        existing.UserId = task.UserId;
-
-        await _context.SaveChangesAsync();
-        return existing;
+        _mapper.Map(request, existing);
+        await _repository.SaveChangesAsync();
+        return _mapper.Map<TaskItemDto>(existing);
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var existing = await _context.TaskItems.FindAsync(id);
+        var existing = await _repository.GetByIdAsync(id);
         if (existing is null)
         {
             return false;
         }
 
-        _context.TaskItems.Remove(existing);
-        await _context.SaveChangesAsync();
+        _repository.Remove(existing);
+        await _repository.SaveChangesAsync();
         return true;
     }
 }

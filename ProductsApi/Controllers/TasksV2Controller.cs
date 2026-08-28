@@ -37,16 +37,16 @@ public class TasksV2Controller : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] TaskItem task)
+    public async Task<IActionResult> Create([FromBody] CreateTaskRequest request)
     {
-        var created = await _taskService.CreateAsync(task);
+        var created = await _taskService.CreateAsync(request);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] TaskItem task)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateTaskRequest request)
     {
-        var updated = await _taskService.UpdateAsync(id, task);
+        var updated = await _taskService.UpdateAsync(id, request);
         if (updated is null)
         {
             return NotFound();
