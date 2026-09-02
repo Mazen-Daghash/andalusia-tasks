@@ -20,9 +20,9 @@ public class TaskService : ITaskService
     // Whitelist of allowed sort fields. Unknown sortBy values fall back to the default.
     private const string DefaultSortField = "createdat";
 
-    public async Task<PagedResult<TaskItemDto>> GetAllAsync(TaskFilterParams filterParams)
+    public async Task<PagedResult<TaskItemDto>> GetAllAsync(TaskFilterParams filterParams, int userId)
     {
-        var query = _repository.Query();
+        var query = _repository.Query().Where(t => t.UserId == userId);
 
         if (!string.IsNullOrWhiteSpace(filterParams.Search))
         {
@@ -70,23 +70,24 @@ public class TaskService : ITaskService
         };
     }
 
-    public async Task<TaskItemDto?> GetByIdAsync(int id)
+    public async Task<TaskItemDto?> GetByIdAsync(int id, int userId)
     {
         var task = await _repository.GetByIdAsync(id);
-        return task is null ? null : _mapper.Map<TaskItemDto>(task);
+        return task is null || task.UserId != userId ? null : _mapper.Map<TaskItemDto>(task);
     }
 
-    public async Task<TaskItemDto> CreateAsync(CreateTaskRequest request)
+    public async Task<TaskItemDto> CreateAsync(CreateTaskRequest request, int userId)
     {
         var task = _mapper.Map<TaskItem>(request);
+        task.UserId = userId;
         await _repository.AddAsync(task);
         return _mapper.Map<TaskItemDto>(task);
     }
 
-    public async Task<TaskItemDto?> UpdateAsync(int id, UpdateTaskRequest request)
+    public async Task<TaskItemDto?> UpdateAsync(int id, UpdateTaskRequest request, int userId)
     {
         var existing = await _repository.GetByIdAsync(id);
-        if (existing is null)
+        if (existing is null || existing.UserId != userId)
         {
             return null;
         }
@@ -96,10 +97,10 @@ public class TaskService : ITaskService
         return _mapper.Map<TaskItemDto>(existing);
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id, int userId)
     {
         var existing = await _repository.GetByIdAsync(id);
-        if (existing is null)
+        if (existing is null || existing.UserId != userId)
         {
             return false;
         }

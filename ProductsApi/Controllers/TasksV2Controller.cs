@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Asp.Versioning;
 using ProductsApi.Models;
@@ -6,6 +8,7 @@ using ProductsApi.Services;
 namespace ProductsApi.Controllers;
 
 [ApiController]
+[Authorize]
 [ApiVersion("2.0")]
 [Route("api/v2/[controller]")]
 public class TasksV2Controller : ControllerBase
@@ -17,17 +20,20 @@ public class TasksV2Controller : ControllerBase
         _taskService = taskService;
     }
 
+    private int CurrentUserId =>
+        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
     [HttpGet]
     public async Task<IActionResult> Get([FromQuery] TaskFilterParams filterParams)
     {
-        var result = await _taskService.GetAllAsync(filterParams);
+        var result = await _taskService.GetAllAsync(filterParams, CurrentUserId);
         return Ok(result);
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var task = await _taskService.GetByIdAsync(id);
+        var task = await _taskService.GetByIdAsync(id, CurrentUserId);
         if (task is null)
         {
             return NotFound();
@@ -39,14 +45,14 @@ public class TasksV2Controller : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateTaskRequest request)
     {
-        var created = await _taskService.CreateAsync(request);
+        var created = await _taskService.CreateAsync(request, CurrentUserId);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateTaskRequest request)
     {
-        var updated = await _taskService.UpdateAsync(id, request);
+        var updated = await _taskService.UpdateAsync(id, request, CurrentUserId);
         if (updated is null)
         {
             return NotFound();
@@ -58,7 +64,7 @@ public class TasksV2Controller : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var deleted = await _taskService.DeleteAsync(id);
+        var deleted = await _taskService.DeleteAsync(id, CurrentUserId);
         if (!deleted)
         {
             return NotFound();

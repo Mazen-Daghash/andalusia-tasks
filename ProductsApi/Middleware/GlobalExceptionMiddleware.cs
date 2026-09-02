@@ -36,6 +36,7 @@ public class GlobalExceptionMiddleware
         {
             NotFoundException => StatusCodes.Status404NotFound,
             ConflictException => StatusCodes.Status409Conflict,
+            UnauthorizedException => StatusCodes.Status401Unauthorized,
             DueDateInPastException => StatusCodes.Status422UnprocessableEntity,
             ProductsApi.Errors.BadRequestException => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status500InternalServerError
@@ -68,6 +69,7 @@ public class GlobalExceptionMiddleware
     {
         StatusCodes.Status404NotFound => "Not Found",
         StatusCodes.Status409Conflict => "Conflict",
+        StatusCodes.Status401Unauthorized => "Unauthorized",
         StatusCodes.Status422UnprocessableEntity => "Unprocessable Entity",
         _ => "Error"
     };
