@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Asp.Versioning;
+using ProductsApi.Authorization;
 using ProductsApi.Models;
 using ProductsApi.Services;
 
@@ -14,10 +15,12 @@ namespace ProductsApi.Controllers;
 public class TasksV2Controller : ControllerBase
 {
     private readonly ITaskService _taskService;
+    private readonly IAuthorizationService _authorizationService;
 
-    public TasksV2Controller(ITaskService taskService)
+    public TasksV2Controller(ITaskService taskService, IAuthorizationService authorizationService)
     {
         _taskService = taskService;
+        _authorizationService = authorizationService;
     }
 
     private int CurrentUserId =>
@@ -52,24 +55,38 @@ public class TasksV2Controller : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateTaskRequest request)
     {
-        var updated = await _taskService.UpdateAsync(id, request, CurrentUserId);
-        if (updated is null)
+        var entity = await _taskService.GetEntityByIdAsync(id);
+        if (entity is null)
         {
             return NotFound();
         }
 
+        var authResult = await _authorizationService.AuthorizeAsync(User, entity, "CanManageTasks");
+        if (!authResult.Succeeded)
+        {
+            return Forbid();
+        }
+
+        var updated = await _taskService.UpdateAsync(id, request);
         return Ok(updated);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var deleted = await _taskService.DeleteAsync(id, CurrentUserId);
-        if (!deleted)
+        var entity = await _taskService.GetEntityByIdAsync(id);
+        if (entity is null)
         {
             return NotFound();
         }
 
+        var authResult = await _authorizationService.AuthorizeAsync(User, entity, "CanManageTasks");
+        if (!authResult.Succeeded)
+        {
+            return Forbid();
+        }
+
+        await _taskService.DeleteAsync(id);
         return NoContent();
     }
 }

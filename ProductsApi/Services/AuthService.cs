@@ -54,6 +54,13 @@ public class AuthService : IAuthService
         return new AuthResponse { Token = GenerateToken(user) };
     }
 
+    public async Task<List<UserDto>> GetAllUsersAsync()
+    {
+        return await _context.Users
+            .Select(u => new UserDto { Id = u.Id, Name = u.Name, Email = u.Email })
+            .ToListAsync();
+    }
+
     private string GenerateToken(User user)
     {
         var jwtSettings = _configuration.GetSection("Jwt");

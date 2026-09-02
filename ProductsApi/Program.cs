@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Asp.Versioning;
 using FluentValidation;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
+using ProductsApi.Authorization;
 using ProductsApi.Data;
 using ProductsApi.Repositories;
 using ProductsApi.Services;
@@ -42,7 +44,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CanManageTasks", policy => policy.Requirements.Add(new CanManageTasksRequirement()));
+});
+builder.Services.AddScoped<IAuthorizationHandler, TaskAuthorizationHandler>();
 
 // Configure API versioning as requested with default version 1.0
 builder.Services.AddApiVersioning(options =>

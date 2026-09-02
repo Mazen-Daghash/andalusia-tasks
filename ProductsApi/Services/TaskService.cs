@@ -76,6 +76,11 @@ public class TaskService : ITaskService
         return task is null || task.UserId != userId ? null : _mapper.Map<TaskItemDto>(task);
     }
 
+    public async Task<TaskItem?> GetEntityByIdAsync(int id)
+    {
+        return await _repository.GetByIdAsync(id);
+    }
+
     public async Task<TaskItemDto> CreateAsync(CreateTaskRequest request, int userId)
     {
         var task = _mapper.Map<TaskItem>(request);
@@ -84,10 +89,10 @@ public class TaskService : ITaskService
         return _mapper.Map<TaskItemDto>(task);
     }
 
-    public async Task<TaskItemDto?> UpdateAsync(int id, UpdateTaskRequest request, int userId)
+    public async Task<TaskItemDto?> UpdateAsync(int id, UpdateTaskRequest request)
     {
         var existing = await _repository.GetByIdAsync(id);
-        if (existing is null || existing.UserId != userId)
+        if (existing is null)
         {
             return null;
         }
@@ -97,10 +102,10 @@ public class TaskService : ITaskService
         return _mapper.Map<TaskItemDto>(existing);
     }
 
-    public async Task<bool> DeleteAsync(int id, int userId)
+    public async Task<bool> DeleteAsync(int id)
     {
         var existing = await _repository.GetByIdAsync(id);
-        if (existing is null || existing.UserId != userId)
+        if (existing is null)
         {
             return false;
         }
